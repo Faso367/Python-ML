@@ -1,6 +1,7 @@
 from random import choice
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup
 import requests
+import settings
 
 
 DESCTOP_AGENTS = ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
@@ -14,48 +15,10 @@ DESCTOP_AGENTS = ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML
                   'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
                   'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0']
 
-# proxies = {
-#     'http': get_free_proxies(),
-#     'https': get_free_proxies()
-# }
-
-
-def get_free_proxies() -> dict:
-    """
-    Возвращает рандомные бесплатные proxy
-    """
-    url = "https://free-proxy-list.net/"
-    request = requests.get(url)
-    # получаем ответ HTTP и создаем объект soup
-    soup = bs(request.content, "lxml")
-    proxies = []
-
-    # with open("proxy.html", "wb") as f:
-    #     f.write(request.content)
-
-    for row in soup.find("table", attrs={"class": "table table-striped table-bordered"}).find_all("tr")[1:]:
-        tds = row.find_all("td")
-        try:
-            ip = tds[0].text.strip()
-            port = tds[1].text.strip()
-            host = f"{ip}:{port}"
-            proxies.append(host)
-        except IndexError:
-            continue
-    proxy = {
-        'http': choice(proxies),
-        'https': choice(proxies)
-    }
-    return proxy
-
-
-# def get_session(proxies):
-#     # создать HTTP‑сеанс
-#     session = requests.Session()
-#     # выбираем один случайный прокси
-#     proxy = choice(proxies)
-#     session.proxies = {"http": proxy, "https": proxy}
-#     return session
+proxies = {
+    'http': choice(settings.PROXIES),
+    'https': choice(settings.PROXIES)
+}
 
 
 def random_headers():
@@ -69,12 +32,13 @@ def search_href(url: str, urls: list) -> list:
     """
     Ищет все ссылки на странице и добавляет их в список для дальнейшего парсинга
     """
-    response = requests.get(url, headers=random_headers(), proxies=get_free_proxies(), timeout=1.5)
+    response = requests.get(url, headers=random_headers(),
+                            proxies=proxies, timeout=1.5)
     if response.status_code != 200:  # проверка статус-кода запроса
         print(response.status_code)
         return urls
 
-    bs = bs(response.text, "lxml")
+    bs = BeautifulSoup(response.text, "lxml")
     temp = bs.find_all("a")  # поиск всех тегов <a> на странице
     for element in temp:  # итерируемся по всем найденым тегам <a>
         href = element.get("href", "")  # вытаскиваем из тега ссылку
@@ -89,12 +53,13 @@ def search_form(url: str) -> int | None:
     Ищет количество форм на странице
     """
     print(url)
-    response = requests.get(url, headers=random_headers(), proxies=get_free_proxies(), timeout=1.5)
+    response = requests.get(url, headers=random_headers(),
+                            proxies=proxies, timeout=1.5)
     if response.status_code != 200:  # проверка статус-кода запроса
         print("None: ", response.status_code)
         return None
 
-    bs = bs(response.text, "lxml")
+    bs = BeautifulSoup(response.text, "lxml")
     temp = bs.find_all("form")
     print(len(temp))
     return len(temp)
@@ -110,7 +75,7 @@ def start_parse(url: str) -> dict:
 
     search_href(url, urls)
     # print(urls)
-    while i <= len(urls):
+    while i < len(urls):
         # print(urls[i])
         if urls[i][0] == "/":
             url_now = url + urls[i][1:]  # ссылка на страницу
