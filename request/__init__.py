@@ -1,4 +1,6 @@
+import json
 from random import choice
+import time
 from bs4 import BeautifulSoup
 import requests
 import argparse
@@ -31,11 +33,17 @@ def search_href(response, urls: list, url: str) -> list:
     temp = bs.find_all("a")  # поиск всех тегов <a> на странице
     for element in temp:  # итерируемся по всем найденым тегам <a>
         href = element.get("href", "")  # вытаскиваем из тега ссылку
-        if href[0] == "/":
-            href = url + href[1::]  # ссылка на страницу
-        else:
-            if url in href:
-                href = href
+        try:
+            if href[0] == "/":
+                href = url + href[1::]  # ссылка на страницу
+            else:
+                if url in href:
+                    href = href
+                else:
+                    continue
+        except:
+            continue
+
         if "#" not in href and href not in urls and "/" in href:
             urls.append(href)
 
@@ -79,17 +87,28 @@ def start_parse(args: argparse.Namespace) -> dict:
         else:
             proxies = None
         print(url_now)
-        response = requests.get(url_now, headers=random_headers(),
-                                proxies=proxies, timeout=1.5)
-        if response.status_code != 200:  # проверка статус-кода запроса
-            print(response.status_code)
+        try:
+            response = requests.get(url_now, headers=random_headers(),
+                                    proxies=proxies, timeout=1.5)
+        except requests.ReadTimeout as err:
+            print(err)
+            i += 1
             continue
 
+        if response.status_code != 200:  # проверка статус-кода запроса
+            print("status code:", response.status_code)
+            time.sleep(2)
+            i += 1
+            continue
         # количество форм на странице
         k_forms = search_form(response)
         result[url_now] = k_forms
 
         search_href(response, urls, url)
         i += 1
+
+    if args.outputfile != None:
+        with open(args.outputfile, "w") as file:
+            json.dump(result, file)
 
     return result
