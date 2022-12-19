@@ -32,15 +32,24 @@ def search_href(response, urls: list, url: str) -> list:
     bs = BeautifulSoup(response.text, "lxml")
     temp = bs.find_all("a")  # поиск всех тегов <a> на странице
     for element in temp:  # итерируемся по всем найденым тегам <a>
-        href = element.get("href", "")  # вытаскиваем из тега ссылку
+        href = element.get("href")  # вытаскиваем из тега ссылку
         try:
-            if href[0] == "/":
-                href = url + href[1::]  # ссылка на страницу
-            else:
-                if url in href:
-                    href = href
+            if url in href:
+                href = href
+            elif href[0] != "#":
+                if href[0] == "/":
+                    href = url + href[1::]
                 else:
-                    continue
+                    href = url + href
+            else:
+                continue
+            # if href[0] == "/":
+            #     href = url + href[1::]  # ссылка на страницу
+            # else:
+            #     if url in href:
+            #         href = href
+            #     else:
+            #         continue
         except:
             continue
 
@@ -50,14 +59,55 @@ def search_href(response, urls: list, url: str) -> list:
     return urls
 
 
-def search_form(response) -> int | None:
+def search_form(response) -> dict:
     """
     Ищет количество форм на странице
     """
+    answer = {}
+
     bs = BeautifulSoup(response.text, "lxml")
-    temp = bs.find_all("form")
-    print(len(temp))
-    return len(temp)
+    form = bs.find_all("form")
+    input = bs.find_all("input")
+    textarea = bs.find_all("textarea")
+
+    if len(form) > 0:
+        answer["form"] = []
+        for element in form:
+            name = element.get("name")
+            method = element.get("method")
+            print("\t form name=\"{}\" method=\"{}\"".format(name, method))
+            answer["form"].append({
+                "name": name,
+                "method": method
+            })
+    else:
+        print("\t not found form")
+
+    if len(input) > 0:
+        answer["input"] = []
+        for element in input:
+            name = element.get("name")
+            type = element.get("type")
+            print("\t input type=\"{}\" name=\"{}\"".format(type, name))
+            answer["input"].append({
+                "type": type,
+                "name": name
+            })
+    else:
+        print("\t not found input")
+
+    if len(textarea) > 0:
+        answer["textarea"] = []
+        for element in textarea:
+            name = element.get("name")
+            print("\t textaria name=\"{}\"".format(name))
+            answer["textarea"].append({
+                "name": name
+            })
+    else:
+        print("\t not found textarea")
+
+    return answer
 
 
 def start_parse(args: argparse.Namespace) -> dict:
@@ -86,12 +136,16 @@ def start_parse(args: argparse.Namespace) -> dict:
             }
         else:
             proxies = None
-        print(url_now)
+        print("{}:".format(url_now))
         try:
             response = requests.get(url_now, headers=random_headers(),
                                     proxies=proxies, timeout=1.5)
         except requests.ReadTimeout as err:
             print(err)
+            i += 1
+            continue
+        except:
+            print("\t Error")
             i += 1
             continue
 

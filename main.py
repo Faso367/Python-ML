@@ -14,4 +14,4 @@ if __name__ == "__main__":
 
     args = parsargs.parse_args()
     # print(args)
-    print(start_parse(args))
+    start_parse(args)
