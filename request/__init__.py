@@ -115,6 +115,10 @@ def start_parse(args: argparse.Namespace) -> dict:
     Основная функция запуска парсера
     """
     url = args.url
+    if url[-1] != "/":
+        print("некорректный url адрес\n" +
+              "пример url: https://address/")
+        return dict()
     proxy = args.proxyfile
     if proxy == None:
         proxylist = None
