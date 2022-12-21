@@ -4,6 +4,7 @@ import time
 from bs4 import BeautifulSoup
 import requests
 import argparse
+from urllib.parse import urlparse
 
 
 DESCKTOP_AGENTS = ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
@@ -110,15 +111,21 @@ def search_form(response) -> dict:
     return answer
 
 
+def catch_domain(url: str):
+    struct_url = urlparse(url=url)
+    return struct_url.scheme + "://" + struct_url.netloc + "/"
+
+
 def start_parse(args: argparse.Namespace) -> dict:
     """
     Основная функция запуска парсера
     """
     url = args.url
-    if url[-1] != "/":
-        print("некорректный url адрес\n" +
-              "пример url: https://address/")
-        return dict()
+    # if url[-1] != "/":
+    #     print("некорректный url адрес\n" +
+    #           "пример url: https://address/")
+    #     return dict()
+    domain = catch_domain(url)
     proxy = args.proxyfile
     if proxy == None:
         proxylist = None
@@ -162,7 +169,7 @@ def start_parse(args: argparse.Namespace) -> dict:
         k_forms = search_form(response)
         result[url_now] = k_forms
 
-        search_href(response, urls, url)
+        search_href(response, urls, domain)
         i += 1
 
     if args.outputfile != None:
